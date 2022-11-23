@@ -1,0 +1,41 @@
+{
+  "name": "eslint-plugin-remix-react-routes",
+  "version": "1.0.0",
+  "description": "Validate <Link> and friends point to valid routes in a Remix app",
+  "keywords": [
+    "eslint",
+    "eslintplugin",
+    "eslint-plugin"
+  ],
+  "author": "Jon Jensen",
+  "main": "./dist/index.js",
+  "files": [
+    "dist/*"
+  ],
+  "scripts": {
+    "build": "tsup-node src/index.ts src/readConfig.ts --dts --format cjs",
+    "clean": "rm -rf dist",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@typescript-eslint/types": "^5.44.0",
+    "@typescript-eslint/utils": "^5.44.0",
+    "globby": "^11.0.4",
+    "synckit": "^0.8.4",
+    "tsup": "^6.5.0"
+  },
+  "devDependencies": {
+    "@remix-run/dev": "^1.7.6",
+    "eslint": "^8.19.0",
+    "eslint-plugin-eslint-plugin": "^5.0.0",
+    "eslint-plugin-node": "^11.1.0"
+  },
+  "engines": {
+    "node": "^14.17.0 || ^16.0.0 || >= 18.0.0"
+  },
+  "peerDependencies": {
+    "@remix-run/dev": "^1.7.6",
+    "eslint": ">=7"
+  },
+  "license": "ISC"
+}
