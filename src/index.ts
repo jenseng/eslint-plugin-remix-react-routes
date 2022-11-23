@@ -173,11 +173,14 @@ const RoutingComponentAttributeMap = {
 } as const;
 
 export const rules = {
-  "validate-paths": createRule({
+  "no-ambiguous-paths": createRule({
     create(context) {
       const filename = path.relative(process.cwd(), context.getFilename());
       const appConfig = getRemixAppConfig(filename);
       if (!appConfig) return {}; // Not in a remix app, so 🤷‍♂️
+
+      const fromPath = findRoutePathByFilename(filename, appConfig);
+      if (fromPath) return {}; // If we're inside a route, we can resolve relative paths, so we're all good
 
       return {
         JSXElement(node) {
@@ -195,19 +198,65 @@ export const rules = {
             if (!attr.value) continue;
             const toPath = getPathValue(attr.value);
             if (!toPath) continue;
-            const fromPath = findRoutePathByFilename(filename, appConfig);
+            if (normalizePath(toPath, fromPath)) continue;
+            context.report({
+              messageId: "ambiguousPath",
+              loc: attr.value.loc,
+              data: {
+                toPath,
+                componentName,
+              },
+            });
+          }
+        },
+      };
+    },
+    name: "no-ambiguous-paths",
+    meta: {
+      docs: {
+        description:
+          "Ensure <Link> and friends have explicit paths when used outside of a route.",
+        recommended: "warn",
+      },
+      messages: {
+        ambiguousPath:
+          'Ambiguous route path "{{toPath}}". Specify absolute paths when using `<{{componentName}}>` outside of a route.',
+      },
+      type: "suggestion",
+      schema: [],
+    },
+    defaultOptions: [],
+  }),
+
+  "require-valid-paths": createRule({
+    create(context) {
+      const filename = path.relative(process.cwd(), context.getFilename());
+      const appConfig = getRemixAppConfig(filename);
+      if (!appConfig) return {}; // Not in a remix app, so 🤷‍♂️
+      const fromPath = findRoutePathByFilename(filename, appConfig);
+
+      return {
+        JSXElement(node) {
+          if (node.openingElement.name.type !== "JSXIdentifier") return;
+          const {
+            attributes,
+            name: { name: componentName },
+          } = node.openingElement;
+          const attributeNames =
+            RoutingComponentAttributeMap[
+              componentName as keyof typeof RoutingComponentAttributeMap
+            ] || [];
+          const attrs = getAttributes(attributes, attributeNames);
+          for (const attr of attrs) {
+            if (!attr.value) continue;
+            const toPath = getPathValue(attr.value);
+            if (!toPath) continue;
             const toPathNormalized = normalizePath(toPath, fromPath);
-            if (!toPathNormalized) {
-              context.report({
-                messageId: "ambiguousPath",
-                loc: attr.value.loc,
-                data: {
-                  toPath,
-                  toPathNormalized,
-                  componentName,
-                },
-              });
-            } else if (!validateRoute(appConfig.routes, toPathNormalized)) {
+
+            if (
+              toPathNormalized &&
+              !validateRoute(appConfig.routes, toPathNormalized)
+            ) {
               context.report({
                 messageId: "invalidPath",
                 loc: attr.value.loc,
@@ -222,18 +271,16 @@ export const rules = {
         },
       };
     },
-    name: "validate-paths",
+    name: "require-valid-paths",
     meta: {
       docs: {
         description:
           "Ensure <Link> and friends point to actual routes in the app.",
-        recommended: "warn",
+        recommended: "error",
       },
       messages: {
         invalidPath:
           'No route matches "{{toPathNormalized}}". Either create one, or point to a valid route.',
-        ambiguousPath:
-          'Ambiguous route path "{{toPath}}". Specify absolute paths when using `<{{componentName}}>` outside of a route.',
       },
       type: "suggestion",
       schema: [],
