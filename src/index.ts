@@ -41,34 +41,47 @@ const remixApps: {
 const readConfig = createSyncFn(path.resolve(__dirname, "readConfig.js"));
 
 function loadAppConfig(projectPath: string) {
-  // TODO: detect eslint watch mode, as well as IDE server, etc, and start watching route paths
   remixApps[projectPath] = readConfig(projectPath);
   return remixApps[projectPath];
 }
 
+/**
+ * Return the remix app config for this file (iff it's in a Remix app)
+ *
+ * @param filename absolute file path
+ */
 function getRemixAppConfig(filename: string) {
   // if we already found one above us somewhere, it's a cheap lookup
   for (const projectPath in remixApps) {
     if (filename.startsWith(projectPath)) return remixApps[projectPath];
   }
   // otherwise start looking
-  return maybeFindRemixAppConfig(filename);
+  return _maybeFindRemixAppConfig(filename);
 }
 
 const configExts = [".js", ".cjs", ".mjs"];
 const visited = new Map<string, boolean>();
-function maybeFindRemixAppConfig(filename: string) {
+function _maybeFindRemixAppConfig(filename: string) {
   const dir = path.dirname(filename);
   if (dir === filename) return; // root, nope
   if (visited.has(dir)) return; // someone else has been here, nope
   for (const ext of configExts) {
-    let file = path.resolve(dir, "remix.config" + ext);
-    if (fs.existsSync(file)) return loadAppConfig(dir);
+    const file = path.resolve(dir, "remix.config" + ext);
+    if (fs.existsSync(file)) {
+      // TODO: detect eslint watch mode, as well as IDE server, etc, and start watching route paths so we know when to reload this
+      return loadAppConfig(dir);
+    }
   }
   visited.set(dir, true);
-  maybeFindRemixAppConfig(dir);
+  _maybeFindRemixAppConfig(dir);
 }
 
+/**
+ * Determine whether or not the given route path is valid
+ *
+ * @param routes routes tree
+ * @param routePath path to validate
+ */
 // TODO: see if we can leverage matchRoutes
 function validateRoute(routes: JsonFormattedRoute[], routePath: string) {
   if (!routePath.startsWith("/")) throw new Error("Path must be absolute");
@@ -96,6 +109,13 @@ function _validateRouteParts(
   });
 }
 
+/**
+ * Return the route path corresponding to this filename (either via convention or config),
+ * or undefined if the filename doesn't represent a route module
+ *
+ * @param filename absolute file path
+ * @param config remix app config
+ */
 function findRoutePathByFilename(
   filename: string,
   { appDirectory, routes }: RemixAppConfig
@@ -124,10 +144,14 @@ function _findRoutePathByFilename(
   }
 }
 
-function normalizePath(toPath: string, fromPath: string | undefined) {
+/**
+ * Roughly behaves like path.resolve, except it returns undefined rather than
+ * throw if it can't resolve the path
+ */
+function resolvePath(fromPath: string | undefined, toPath: string) {
   const isAbsolute = toPath.startsWith("/");
-  if (!isAbsolute && !fromPath) return; // not in a route, so we can't resolve a relative route 🤷‍♂️
-  return isAbsolute ? toPath : path.normalize(`${fromPath}/${toPath}`);
+  if (!fromPath) return isAbsolute ? toPath : undefined; // not in a route, so we can't resolve a relative route 🤷‍♂️
+  return path.resolve(fromPath, toPath);
 }
 
 // Convert it to a string path, using this simple heuristic...
@@ -249,7 +273,7 @@ export const rules = {
                 value: { loc },
               },
             }) => {
-              if (normalizePath(toPath, currentRoutePath)) return;
+              if (resolvePath(currentRoutePath, toPath)) return;
               context.report({
                 messageId: "ambiguousPath",
                 loc,
@@ -295,7 +319,7 @@ export const rules = {
                 value: { loc },
               },
             }) => {
-              const toPathNormalized = normalizePath(toPath, currentRoutePath);
+              const toPathNormalized = resolvePath(currentRoutePath, toPath);
               if (
                 toPathNormalized &&
                 !validateRoute(appConfig.routes, toPathNormalized)
