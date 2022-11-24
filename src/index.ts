@@ -8,9 +8,9 @@ import type {
   TemplateElement,
 } from "@typescript-eslint/types/dist/generated/ast-spec";
 import { ESLintUtils } from "@typescript-eslint/utils";
-import * as globby from "globby";
 import * as path from "path";
 import { createSyncFn } from "synckit";
+import fs from "fs";
 
 const createRule = ESLintUtils.RuleCreator(
   (name) => `https://example.com/rule/${name}`
@@ -33,31 +33,40 @@ const remixApps: {
   [projectPath: string]: RemixAppConfig;
 } = {};
 
+/**
+ * Synchronously run Remix' async readConfig using a worker thread
+ *
+ * Why you might ask? ESLint really likes things to be synchronous 🫠
+ */
 const readConfig = createSyncFn(path.resolve(__dirname, "readConfig.js"));
 
-const projectPaths = globby
-  .sync("**/remix.config.{js,cjs,mjs}", {
-    gitignore: true,
-  })
-  .map((dir) => path.dirname(dir) + "/");
-for (const projectPath of projectPaths) {
-  refreshAppConfig(projectPath);
-}
-
-// TODO: detect eslint watch mode, as well as IDE server, etc, and start watching route paths
-
-function refreshAppConfig(projectPath: string) {
-  try {
-    remixApps[projectPath] = readConfig(projectPath);
-  } catch (error) {
-    console.error(error);
-  }
+function loadAppConfig(projectPath: string) {
+  // TODO: detect eslint watch mode, as well as IDE server, etc, and start watching route paths
+  remixApps[projectPath] = readConfig(projectPath);
+  return remixApps[projectPath];
 }
 
 function getRemixAppConfig(filename: string) {
+  // if we already found one above us somewhere, it's a cheap lookup
   for (const projectPath in remixApps) {
     if (filename.startsWith(projectPath)) return remixApps[projectPath];
   }
+  // otherwise start looking
+  return maybeFindRemixAppConfig(filename);
+}
+
+const configExts = [".js", ".cjs", ".mjs"];
+const visited = new Map<string, boolean>();
+function maybeFindRemixAppConfig(filename: string) {
+  const dir = path.dirname(filename);
+  if (dir === filename) return; // root, nope
+  if (visited.has(dir)) return; // someone else has been here, nope
+  for (const ext of configExts) {
+    let file = path.resolve(dir, "remix.config" + ext);
+    if (fs.existsSync(file)) return loadAppConfig(dir);
+  }
+  visited.set(dir, true);
+  maybeFindRemixAppConfig(dir);
 }
 
 // TODO: see if we can leverage matchRoutes
@@ -193,7 +202,7 @@ type ValuedAttribute = JSXAttribute & { value: Literal | JSXExpression };
 
 /**
  * If this is a routing-aware element (e.g. <Link>), resolve any path-y
- * attributes (e.g. `to`) and their values, and run the callback
+ * attributes (e.g. `to`) and their string values, and run the callback
  */
 function eachRoutePathAttribute(
   node: JSXElement,
