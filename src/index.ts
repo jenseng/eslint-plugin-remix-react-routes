@@ -1,5 +1,6 @@
 import type {
   JSXAttribute,
+  JSXElement,
   JSXExpression,
   JSXExpressionContainer,
   JSXSpreadAttribute,
@@ -132,7 +133,7 @@ function stringifyTemplatePath(parts: TemplateElement[]) {
   return values.join(EXPR_PLACEHOLDER).replace(mergePattern, ":param");
 }
 
-function getPathValue(node: Literal | JSXExpression) {
+function getNodeStringValue(node: Literal | JSXExpression) {
   switch (node.type) {
     case "Literal":
       return getStringLiteralValue(node);
@@ -172,42 +173,84 @@ const RoutingComponentAttributeMap = {
   Form: ["action"],
 } as const;
 
+type RuleContext = {
+  getFilename(): string;
+  getCwd?(): string;
+};
+function getRemixContext(context: RuleContext) {
+  const filename = path.relative(
+    context.getCwd?.() ?? process.cwd(),
+    context.getFilename()
+  );
+  const appConfig = getRemixAppConfig(filename);
+  const currentRoutePath = appConfig
+    ? findRoutePathByFilename(filename, appConfig)
+    : undefined;
+  return { appConfig, currentRoutePath };
+}
+
+type ValuedAttribute = JSXAttribute & { value: Literal | JSXExpression };
+
+/**
+ * If this is a routing-aware element (e.g. <Link>), resolve any path-y
+ * attributes (e.g. `to`) and their values, and run the callback
+ */
+function eachRoutePathAttribute(
+  node: JSXElement,
+  cb: (data: {
+    componentName: string;
+    attribute: ValuedAttribute;
+    value: string;
+  }) => void
+) {
+  if (node.openingElement.name.type !== "JSXIdentifier") return;
+  const {
+    attributes,
+    name: { name: componentName },
+  } = node.openingElement;
+  const attributeNames =
+    RoutingComponentAttributeMap[
+      componentName as keyof typeof RoutingComponentAttributeMap
+    ] || [];
+  const attrs = getAttributes(attributes, attributeNames);
+  for (const attribute of attrs) {
+    if (!attribute.value) continue;
+    const value = getNodeStringValue(attribute.value);
+    if (!value) continue;
+    cb({ componentName, attribute: attribute as ValuedAttribute, value });
+  }
+}
+
 export const rules = {
   "no-ambiguous-paths": createRule({
     create(context) {
-      const filename = path.relative(process.cwd(), context.getFilename());
-      const appConfig = getRemixAppConfig(filename);
+      const { appConfig, currentRoutePath } = getRemixContext(context);
       if (!appConfig) return {}; // Not in a remix app, so 🤷‍♂️
-
-      const fromPath = findRoutePathByFilename(filename, appConfig);
-      if (fromPath) return {}; // If we're inside a route, we can resolve relative paths, so we're all good
+      if (currentRoutePath) return {}; // If we're inside a route, we can resolve relative paths, so we're all good
+      // TODO: though consider linting full-stack components exported from a route module 🤔
 
       return {
         JSXElement(node) {
-          if (node.openingElement.name.type !== "JSXIdentifier") return;
-          const {
-            attributes,
-            name: { name: componentName },
-          } = node.openingElement;
-          const attributeNames =
-            RoutingComponentAttributeMap[
-              componentName as keyof typeof RoutingComponentAttributeMap
-            ] || [];
-          const attrs = getAttributes(attributes, attributeNames);
-          for (const attr of attrs) {
-            if (!attr.value) continue;
-            const toPath = getPathValue(attr.value);
-            if (!toPath) continue;
-            if (normalizePath(toPath, fromPath)) continue;
-            context.report({
-              messageId: "ambiguousPath",
-              loc: attr.value.loc,
-              data: {
-                toPath,
-                componentName,
+          eachRoutePathAttribute(
+            node,
+            ({
+              componentName,
+              value: toPath,
+              attribute: {
+                value: { loc },
               },
-            });
-          }
+            }) => {
+              if (normalizePath(toPath, currentRoutePath)) return;
+              context.report({
+                messageId: "ambiguousPath",
+                loc,
+                data: {
+                  toPath,
+                  componentName,
+                },
+              });
+            }
+          );
         },
       };
     },
@@ -230,44 +273,32 @@ export const rules = {
 
   "require-valid-paths": createRule({
     create(context) {
-      const filename = path.relative(process.cwd(), context.getFilename());
-      const appConfig = getRemixAppConfig(filename);
+      const { appConfig, currentRoutePath } = getRemixContext(context);
       if (!appConfig) return {}; // Not in a remix app, so 🤷‍♂️
-      const fromPath = findRoutePathByFilename(filename, appConfig);
 
       return {
         JSXElement(node) {
-          if (node.openingElement.name.type !== "JSXIdentifier") return;
-          const {
-            attributes,
-            name: { name: componentName },
-          } = node.openingElement;
-          const attributeNames =
-            RoutingComponentAttributeMap[
-              componentName as keyof typeof RoutingComponentAttributeMap
-            ] || [];
-          const attrs = getAttributes(attributes, attributeNames);
-          for (const attr of attrs) {
-            if (!attr.value) continue;
-            const toPath = getPathValue(attr.value);
-            if (!toPath) continue;
-            const toPathNormalized = normalizePath(toPath, fromPath);
-
-            if (
-              toPathNormalized &&
-              !validateRoute(appConfig.routes, toPathNormalized)
-            ) {
-              context.report({
-                messageId: "invalidPath",
-                loc: attr.value.loc,
-                data: {
-                  toPath,
-                  toPathNormalized,
-                  componentName,
-                },
-              });
+          eachRoutePathAttribute(
+            node,
+            ({
+              value: toPath,
+              attribute: {
+                value: { loc },
+              },
+            }) => {
+              const toPathNormalized = normalizePath(toPath, currentRoutePath);
+              if (
+                toPathNormalized &&
+                !validateRoute(appConfig.routes, toPathNormalized)
+              ) {
+                context.report({
+                  messageId: "invalidPath",
+                  loc,
+                  data: { toPathNormalized },
+                });
+              }
             }
-          }
+          );
         },
       };
     },
