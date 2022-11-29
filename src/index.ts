@@ -40,7 +40,7 @@ export const rules = {
   "no-ambiguous-paths": createRule({
     create(context) {
       const { appConfig, currentRoutePath } = getRemixContext(context);
-      if (!appConfig) return {}; // Not in a remix app, so 🤷‍♂️
+      if (!appConfig) return {}; // Not in a remix app or there was an error, so 🤷‍♂️
       if (currentRoutePath) return {}; // If we're inside a route, we can resolve relative paths, so we're all good
       // TODO: though consider linting full-stack components exported from a route module 🤔
 
@@ -86,7 +86,7 @@ export const rules = {
     create(context) {
       const { appConfig, currentRoutePath, validateRoute } =
         getRemixContext(context);
-      if (!appConfig) return {}; // Not in a remix app, so 🤷‍♂️
+      if (!appConfig) return {}; // Not in a remix app or there was an error, so 🤷‍♂️
 
       return {
         JSXElement(node) {

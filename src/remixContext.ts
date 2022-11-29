@@ -51,14 +51,17 @@ function _maybeFindRemixAppConfig(filename: string) {
   const dir = path.dirname(filename);
   if (dir === filename) return; // root, nope
   if (visited.has(dir)) return; // someone else has been here, nope
-  for (const ext of configExts) {
-    const file = path.resolve(dir, "remix.config" + ext);
-    if (fs.existsSync(file)) {
-      // TODO: detect eslint watch mode, as well as IDE server, etc, and start watching route paths so we know when to reload this
-      return loadAppConfig(dir);
+  try {
+    for (const ext of configExts) {
+      const file = path.resolve(dir, "remix.config" + ext);
+      if (fs.existsSync(file)) {
+        // TODO: detect eslint watch mode, as well as IDE server, etc, and start watching route paths so we know when to reload this
+        return loadAppConfig(dir);
+      }
     }
+  } finally {
+    visited.set(dir, true);
   }
-  visited.set(dir, true);
   _maybeFindRemixAppConfig(dir);
 }
 
@@ -138,11 +141,16 @@ type RuleContext = {
  * Get the Remix context based on the current ESLint rule context
  */
 export function getRemixContext(context: RuleContext) {
-  const filename = path.relative(
-    context.getCwd?.() ?? process.cwd(),
-    context.getFilename()
-  );
-  const appConfig = getRemixAppConfig(filename);
+  const filename = context.getFilename();
+  let appConfig: RemixAppConfig | undefined;
+  try {
+    appConfig = getRemixAppConfig(filename);
+  } catch (e) {
+    console.warn(
+      `Error loading Remix config, remix-react-routes rules will be skipped:`,
+      e
+    );
+  }
   const currentRoutePath = appConfig
     ? findRoutePathByFilename(filename, appConfig)
     : undefined;
