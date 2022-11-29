@@ -1,5 +1,4 @@
 import { ESLintUtils } from "@typescript-eslint/utils";
-import * as path from "path";
 import { eachRoutePathAttribute } from "./ast";
 import { getRemixContext } from "./remixContext";
 
@@ -8,20 +7,34 @@ const createRule = ESLintUtils.RuleCreator(
 );
 
 /**
- * Roughly behaves like path.resolve, except it returns undefined rather than
+ * Roughly behaves like path.resolve, except it 1. doesn't remove repeating slashes and 2. returns undefined rather than
  * throw if it can't resolve the path
  */
 function resolvePath(fromPath: string | undefined, toPath: string) {
   const isAbsolute = toPath.startsWith("/");
-  if (!fromPath) return isAbsolute ? toPath : undefined; // not in a route, so we can't resolve a relative route 🤷‍♂️
-  return path.resolve(fromPath, toPath);
+  if (isAbsolute) return toPath;
+  if (!fromPath) return undefined; // can't resolve a relative path if we don't know where we are 🤷‍♂️
+  const parts = `${fromPath}/${toPath}`.split("/");
+  const result: string[] = [];
+  for (const part of parts) {
+    if (part === "..") result.pop();
+    else if (part !== ".") result.push(part);
+  }
+  return result.join("/");
 }
 
-const RoutingComponentAttributeMap = {
-  Link: ["to"],
-  NavLink: ["to"],
-  Form: ["action"],
-} as const;
+// TODO: perhaps make this configurable if users want to lint other components/attributes
+const RoutingComponentAttributes = [
+  { component: "Link", attribute: "to", nativeAlternative: "<a href>" },
+  { component: "NavLink", attribute: "to", nativeAlternative: "<a href>" },
+  {
+    component: "Form",
+    attribute: "action",
+    nativeAlternative: "<form action>",
+  },
+];
+
+const IS_A_URI = /^(\w+:)?\/\//;
 
 export const rules = {
   "no-ambiguous-paths": createRule({
@@ -35,21 +48,16 @@ export const rules = {
         JSXElement(node) {
           eachRoutePathAttribute(
             node,
-            RoutingComponentAttributeMap,
-            ({
-              componentName,
-              value: toPath,
-              attribute: {
-                value: { loc },
-              },
-            }) => {
+            RoutingComponentAttributes,
+            ({ component, attribute, value: toPath, loc }) => {
               if (resolvePath(currentRoutePath, toPath)) return;
               context.report({
                 messageId: "ambiguousPath",
                 loc,
                 data: {
                   toPath,
-                  componentName,
+                  component,
+                  attribute,
                 },
               });
             }
@@ -66,7 +74,7 @@ export const rules = {
       },
       messages: {
         ambiguousPath:
-          'Ambiguous route path "{{toPath}}". Specify absolute paths when using `<{{componentName}}>` outside of a route.',
+          'Ambiguous route path "{{toPath}}". Specify absolute paths when using `<{{component}} {{attribute}}>` outside of a route.',
       },
       type: "suggestion",
       schema: [],
@@ -84,19 +92,26 @@ export const rules = {
         JSXElement(node) {
           eachRoutePathAttribute(
             node,
-            RoutingComponentAttributeMap,
-            ({
-              value: toPath,
-              attribute: {
-                value: { loc },
-              },
-            }) => {
+            RoutingComponentAttributes,
+            ({ nativeAlternative, value: toPath, loc }) => {
+              const looksLikeAUrl = toPath.match(IS_A_URI);
               const toPathNormalized = resolvePath(currentRoutePath, toPath);
-              if (toPathNormalized && !validateRoute(toPathNormalized)) {
+              // if we can't normalize a relative path, we generally defer to no-ambiguous-paths...
+              if (toPathNormalized) {
+                if (validateRoute(toPathNormalized)) return;
+                if (!looksLikeAUrl)
+                  return context.report({
+                    messageId: "invalidPath",
+                    loc,
+                    data: { toPathNormalized },
+                  });
+              }
+              // ... unless it looks like a URL in which case we still complain here
+              if (looksLikeAUrl) {
                 context.report({
-                  messageId: "invalidPath",
+                  messageId: "urlAsPath",
                   loc,
-                  data: { toPathNormalized },
+                  data: { toPathNormalized, nativeAlternative },
                 });
               }
             }
@@ -112,6 +127,7 @@ export const rules = {
         recommended: "error",
       },
       messages: {
+        urlAsPath: `No route matches "{{toPathNormalized}}". If you're trying to reference a URL, consider using \`{{nativeAlternative}}\` instead.`,
         invalidPath:
           'No route matches "{{toPathNormalized}}". Either create one, or point to a valid route.',
       },

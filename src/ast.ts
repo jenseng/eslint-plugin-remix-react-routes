@@ -5,11 +5,13 @@ import type {
   JSXExpressionContainer,
   JSXSpreadAttribute,
   Literal,
+  SourceLocation,
   TemplateElement,
 } from "@typescript-eslint/types/dist/generated/ast-spec";
 
 const EXPR_PLACEHOLDER = "__EXPR_PLACEHOLDER__";
 const mergePattern = new RegExp(`[^/]*${EXPR_PLACEHOLDER}[^/]*`);
+
 /**
  * Convert template parts to a string path, using this simple heuristic:
  *  - If expressions are bounded by slashes, assume they represent a single dynamic path segment
@@ -49,28 +51,23 @@ function getJSXExpressionStringValue(node: JSXExpressionContainer) {
   }
 }
 
-function getAttributes(
-  attributes: (JSXAttribute | JSXSpreadAttribute)[],
-  names: readonly string[]
-) {
-  return attributes.filter(
-    (a) => a.type === "JSXAttribute" && names.includes(a.name.name as string)
-  ) as JSXAttribute[];
-}
-
-type ValuedAttribute = JSXAttribute & { value: Literal | JSXExpression };
-
 /**
- * If this is a routing-aware element (e.g. <Link>), resolve any path-y
- * attributes (e.g. `to`) and their string values, and run the callback
+ * If this is a routing-aware element (e.g. `<Link>`), resolve any path-y
+ * attributes (e.g. `to`) and run the callback for each one.
  */
 export function eachRoutePathAttribute(
   node: JSXElement,
-  routingComponentAttributeMap: Record<string, readonly string[]>,
+  routingComponentAttributes: {
+    component: string;
+    attribute: string;
+    nativeAlternative?: string;
+  }[],
   cb: (data: {
-    componentName: string;
-    attribute: ValuedAttribute;
+    component: string;
+    attribute: string;
+    nativeAlternative?: string;
     value: string;
+    loc: SourceLocation;
   }) => void
 ) {
   if (node.openingElement.name.type !== "JSXIdentifier") return;
@@ -78,12 +75,20 @@ export function eachRoutePathAttribute(
     attributes,
     name: { name: componentName },
   } = node.openingElement;
-  const attributeNames = routingComponentAttributeMap[componentName] || [];
-  const attrs = getAttributes(attributes, attributeNames);
-  for (const attribute of attrs) {
+
+  routingComponentAttributes = routingComponentAttributes.filter(
+    ({ component }) => component === componentName
+  );
+  for (const attribute of attributes) {
+    if (attribute.type !== "JSXAttribute") continue;
     if (!attribute.value) continue;
+    const componentAttribute = routingComponentAttributes.find(
+      (ca) => ca.attribute === attribute.name.name
+    );
+    if (!componentAttribute) continue;
     const value = getNodeStringValue(attribute.value);
+    const loc = attribute.loc;
     if (!value) continue;
-    cb({ componentName, attribute: attribute as ValuedAttribute, value });
+    cb({ ...componentAttribute, value, loc });
   }
 }

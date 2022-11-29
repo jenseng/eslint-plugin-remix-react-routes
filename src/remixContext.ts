@@ -134,6 +134,9 @@ type RuleContext = {
   getFilename(): string;
   getCwd?(): string;
 };
+/**
+ * Get the Remix context based on the current ESLint rule context
+ */
 export function getRemixContext(context: RuleContext) {
   const filename = path.relative(
     context.getCwd?.() ?? process.cwd(),
