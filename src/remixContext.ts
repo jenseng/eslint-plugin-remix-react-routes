@@ -1,6 +1,8 @@
 import * as path from "path";
 import { createSyncFn } from "synckit";
 import fs from "fs";
+import * as chokidar from "chokidar";
+import { formatRoutesAsJson } from "@remix-run/dev/dist/config/format";
 
 type RemixAppConfig = {
   appDirectory: string;
@@ -15,24 +17,93 @@ type JsonFormattedRoute = {
   children?: JsonFormattedRoute[];
 };
 
+process.env.DEBUG = "1";
 const remixApps: {
   [projectPath: string]: RemixAppConfig;
 } = {};
+
+// TODO: consider detecting other watch flavors
+const watchForChanges = isRunningInVSCodeServer();
+
+const configBase = "remix.config";
+const configExts = [".js", ".cjs", ".mjs"];
+
+const _watchers: Record<string, () => void> = {};
+
+// watch this Remix app for any changes affecting its config
+function watchRemixAppConfig(
+  projectPath: string,
+  appConfig: RemixAppConfig,
+  recreate: boolean
+) {
+  if (_watchers[projectPath] && !recreate) return;
+
+  debug(`${recreate ? "recreating" : "creating"} watcher for ${projectPath}`);
+  _watchers[projectPath]?.();
+
+  let ready = false;
+  let active = true;
+  const routesDir = path.join(appConfig.appDirectory, "routes");
+  const watcher = chokidar.watch([
+    path.join(projectPath, `${configBase}{${configExts.join(",")}}`),
+    routesDir,
+    // TODO: additional user-defined paths which may affect the config
+  ]);
+
+  watcher.on("ready", () => (ready = true));
+  watcher.on("add", (changedPath) => {
+    if (!ready || !active) return;
+    debug(`added ${changedPath}`);
+    loadAppConfig(projectPath);
+  });
+  watcher.on("unlink", (changedPath) => {
+    if (!ready || !active) return;
+    debug(`removed ${changedPath}`);
+    loadAppConfig(projectPath);
+  });
+  watcher.on("change", (changedPath) => {
+    if (!ready || !active || changedPath.startsWith(routesDir)) return;
+    debug(`changed ${changedPath}`);
+    try {
+      loadAppConfig(projectPath, true);
+    } catch (e) {
+      console.error(e);
+    }
+  });
+
+  _watchers[projectPath] = () => {
+    active = false;
+    watcher.close();
+  };
+}
+
+function isRunningInVSCodeServer() {
+  // TODO: find a more reliable way to detect this 🙃😬😅
+  return process.exit.toString().includes("ExitCalled.type");
+}
+
+function debug(...values: string[]) {
+  if (process.env.DEBUG) values.forEach((value) => console.warn(value));
+}
 
 /**
  * Synchronously run Remix' async readConfig using a worker thread
  *
  * Why you might ask? ESLint really likes things to be synchronous 🫠
  */
-const readConfig = createSyncFn(path.resolve(__dirname, "readConfig.js"));
+const readConfigSync = createSyncFn(path.resolve(__dirname, "readConfig.js"));
 
-function loadAppConfig(projectPath: string) {
-  remixApps[projectPath] = readConfig(projectPath);
-  return remixApps[projectPath];
+function loadAppConfig(projectPath: string, recreateWatcher = false) {
+  const appConfig = readConfigSync(projectPath);
+  appConfig.routes = JSON.parse(formatRoutesAsJson(appConfig.routes));
+  if (watchForChanges)
+    watchRemixAppConfig(projectPath, appConfig, recreateWatcher);
+  debug("loaded app config", JSON.stringify(appConfig, null, 2));
+  return (remixApps[projectPath] = appConfig);
 }
 
 /**
- * Return the remix app config for this file (iff it's in a Remix app)
+ * Return the Remix app config for this file (iff it's in a Remix app)
  *
  * @param filename absolute file path
  */
@@ -45,7 +116,6 @@ export function getRemixAppConfig(filename: string) {
   return _maybeFindRemixAppConfig(filename);
 }
 
-const configExts = [".js", ".cjs", ".mjs"];
 const visited = new Map<string, boolean>();
 function _maybeFindRemixAppConfig(filename: string) {
   const dir = path.dirname(filename);
@@ -53,9 +123,8 @@ function _maybeFindRemixAppConfig(filename: string) {
   if (visited.has(dir)) return; // someone else has been here, nope
   try {
     for (const ext of configExts) {
-      const file = path.resolve(dir, "remix.config" + ext);
+      const file = path.resolve(dir, configBase + ext);
       if (fs.existsSync(file)) {
-        // TODO: detect eslint watch mode, as well as IDE server, etc, and start watching route paths so we know when to reload this
         return loadAppConfig(dir);
       }
     }
