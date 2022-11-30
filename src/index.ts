@@ -1,7 +1,7 @@
-import noAmbiguousPaths from "./rules/no-ambiguous-paths";
+import noRelativePaths from "./rules/no-relative-paths";
 import requireValidPaths from "./rules/require-valid-paths";
 
 export const rules = {
-  "no-ambiguous-paths": noAmbiguousPaths,
+  "no-relative-paths": noRelativePaths,
   "require-valid-paths": requireValidPaths,
 };

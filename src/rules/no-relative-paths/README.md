@@ -1,4 +1,4 @@
-# Ensure `<Link>` and friends use absolute paths (`remix-react-routes/no-ambiguous-paths`)
+# Ensure `<Link>` and friends use absolute paths (`remix-react-routes/no-relative-paths`)
 
 ## Rule Details
 
@@ -52,7 +52,7 @@ The supported options are:
 To use, you can specify as follows:
 
 ```javascript
-"remix-react-routes/no-ambiguous-paths": [<enabled>, {"enforceInRouteComponents": true}]
+"remix-react-routes/no-relative-paths": [<enabled>, {"enforceInRouteComponents": true}]
 ```
 
 ## When Not To Use It

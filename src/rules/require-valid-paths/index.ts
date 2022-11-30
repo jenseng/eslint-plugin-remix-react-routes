@@ -20,7 +20,7 @@ export default createRule({
           RoutingComponentAttributes,
           ({ nativeAlternative, value: toPath, loc }) => {
             const toPathNormalized = resolvePath(currentRoutePath, toPath);
-            if (!toPathNormalized) return; // if we can't resolve a relative path, we defer to no-ambiguous-paths
+            if (!toPathNormalized) return; // if we can't resolve a relative path, we defer to no-relative-paths
             if (validateRoute(toPathNormalized)) return; // yay
             return context.report({
               messageId: isAUri(toPath) ? "urlAsPath" : "invalidPath",
