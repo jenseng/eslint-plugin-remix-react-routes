@@ -85,7 +85,7 @@ export function eachRoutePathAttribute(
     );
     if (!componentAttribute) continue;
     const value = getNodeStringValue(attribute.value);
-    const loc = attribute.loc;
+    const loc = attribute.value.loc;
     if (!value) continue;
     cb({ ...componentAttribute, value, loc });
   }

@@ -21,9 +21,10 @@ export default createRule({
           ({ nativeAlternative, value: toPath, loc }) => {
             const toPathNormalized = resolvePath(currentRoutePath, toPath);
             if (!toPathNormalized) return; // if we can't resolve a relative path, we defer to no-relative-paths
+            if (isAUri(toPath)) return; // defer to no-urls
             if (validateRoute(toPathNormalized)) return; // yay
             return context.report({
-              messageId: isAUri(toPath) ? "urlAsPath" : "invalidPath",
+              messageId: "invalidPath",
               loc,
               data: { toPathNormalized, nativeAlternative },
             });
@@ -40,7 +41,6 @@ export default createRule({
       recommended: "error",
     },
     messages: {
-      urlAsPath: `No route matches "{{toPathNormalized}}". If you're trying to reference a URL, consider using \`{{nativeAlternative}}\` instead.`,
       invalidPath:
         'No route matches "{{toPathNormalized}}". Either create one, or point to a valid route.',
     },

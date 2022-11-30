@@ -5,11 +5,16 @@
   "keywords": [
     "eslint",
     "eslintplugin",
-    "eslint-plugin"
+    "eslint-plugin",
+    "remix",
+    "route",
+    "routes",
+    "Link"
   ],
   "author": "Jon Jensen",
   "main": "./dist/index.js",
   "files": [
+    "LICENSE.md",
     "dist/*"
   ],
   "scripts": {

@@ -9,32 +9,24 @@ This rule checks:
 - Relative paths used outside a route component
 - Relative paths used within a route component (if `enforceInRouteComponents=true`)
 
-Examples of incorrect code for this rule:
+This rule does not check:
+
+- Paths that look like URLs (these are handled by [no-urls](../no-urls/))
+
+### Examples of incorrect code for this rule:
 
 **app/components/header.jsx**
 
 ```jsx
-return (
-  <>
-    <Link to="settings">Settings</Link>
-    {/* From Link's point of view, this is a relative link too 😬 */}
-    <Link to="http://example.com">Example</Link>
-  </>
-);
+return <Link to="settings">Settings</Link>;
 ```
 
-Examples of correct code for this rule:
+### Examples of correct code for this rule:
 
 **app/components/header.jsx**
 
 ```jsx
-return (
-  <>
-    <Link to="/settings">Settings</Link>
-    {/* That's better 😅 */}
-    <a href="http://example.com">Example</a>
-  </>
-);
+return <Link to="/settings">Settings</Link>;
 ```
 
 **app/routes/index.jsx**

@@ -9,7 +9,11 @@ This rule checks:
 - Any path used within a route component
 - Absolute paths used outside a route component
 
-Examples of incorrect code for this rule:
+This rule does not check:
+
+- Paths that look like URLs (these are handled by [no-urls](../no-urls/))
+
+### Examples of incorrect code for this rule:
 
 **app/components/header.jsx**
 
@@ -29,13 +33,11 @@ return (
   <>
     <Link to="not/a/valid/route">One</Link>
     <Link to={`/also/not/a/valid/route/${param}`}>Two</Link>
-    {/* From Link's point of view, this is actually a relative link 😬 */}
-    <Link to="http://example.com">Three</Link>
   </>
 );
 ```
 
-Examples of correct code for this rule:
+### Examples of correct code for this rule:
 
 **app/components/header.jsx**
 
@@ -55,8 +57,6 @@ return (
   <>
     <Link to="a/valid/route">One</Link>
     <Link to={`/also/a/valid/route/${param}`}>Two</Link>
-    {/* That's better 😅 */}
-    <a href="http://example.com">Three</a>
   </>
 );
 ```

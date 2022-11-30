@@ -32,7 +32,8 @@ Then configure the rules you want to use under the rules section.
 {
   "rules": {
     "remix-react-routes/require-valid-paths": 2,
-    "remix-react-routes/no-relative-paths": 2
+    "remix-react-routes/no-relative-paths": 2,
+    "remix-react-routes/no-urls": 2
   }
 }
 ```
@@ -41,3 +42,4 @@ Then configure the rules you want to use under the rules section.
 
 - [require-valid-paths](src/rules/require-valid-paths) - Ensure `<Link>` and friends point to actual routes in the app
 - [no-relative-paths](src/rules/no-relative-paths) - Ensure `<Link>` and friends use absolute paths
+- [no-urls](src/rules/no-relative-paths) - Ensure `<Link>` and friends use paths rather than URLs

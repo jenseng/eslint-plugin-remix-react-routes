@@ -12,13 +12,9 @@ type Options = [
     enforceInRouteComponents: boolean;
   }
 ];
-export default createRule<
-  Options,
-  "relativePath" | "ambiguousPath" | "urlAsPath"
->({
+export default createRule<Options, "relativePath" | "ambiguousPath">({
   create(context) {
-    const { appConfig, currentRoutePath } = getRemixContext(context);
-    if (!appConfig) return {}; // Not in a Remix app or there was an error, so 🤷‍♂️
+    const { currentRoutePath } = getRemixContext(context);
 
     // If we're inside a route, we can resolve relative paths, so bail if the options allow it
     if (currentRoutePath && !context.options[0]?.enforceInRouteComponents)
@@ -32,12 +28,9 @@ export default createRule<
           RoutingComponentAttributes,
           ({ component, attribute, value: toPath, nativeAlternative, loc }) => {
             if (isAbsolute(toPath)) return;
+            if (isAUri(toPath)) return; // defer to no-urls
             context.report({
-              messageId: isAUri(toPath)
-                ? "urlAsPath"
-                : currentRoutePath
-                ? "relativePath"
-                : "ambiguousPath",
+              messageId: currentRoutePath ? "relativePath" : "ambiguousPath",
               loc,
               data: {
                 toPath,
@@ -56,14 +49,13 @@ export default createRule<
     docs: {
       description:
         "Ensure <Link> and friends have absolute paths when used outside of a route.",
-      recommended: "warn",
+      recommended: "error",
     },
     messages: {
       relativePath:
         'Relative route path "{{toPath}}". Specify absolute paths when using `<{{component}} {{attribute}}>`.',
       ambiguousPath:
         'Ambiguous route path "{{toPath}}". Specify absolute paths when using `<{{component}} {{attribute}}>` outside of a route.',
-      urlAsPath: `Ambiguous route path "{{toPath}}". If you're trying to reference a URL, consider using \`{{nativeAlternative}}\` instead.`,
     },
     type: "suggestion",
     schema: [
