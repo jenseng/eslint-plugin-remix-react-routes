@@ -17,7 +17,6 @@ type JsonFormattedRoute = {
   children?: JsonFormattedRoute[];
 };
 
-process.env.DEBUG = "1";
 const remixApps: {
   [projectPath: string]: RemixAppConfig;
 } = {};

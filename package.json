@@ -1,7 +1,7 @@
 {
   "name": "eslint-plugin-remix-react-routes",
   "version": "1.0.0",
-  "description": "Validate <Link> and friends point to valid routes in a Remix app",
+  "description": "Validate routes referenced by <Link> and friends in a Remix app",
   "keywords": [
     "eslint",
     "eslintplugin",

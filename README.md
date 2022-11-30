@@ -1,6 +1,6 @@
 # eslint-plugin-remix-react-routes
 
-Validate &lt;Link&gt; and friends point to valid routes in a Remix app
+Validate routes referenced by `<Link>` and friends in a [Remix](https://remix.run) app.
 
 ## Installation
 
@@ -22,25 +22,22 @@ Add `remix-react-routes` to the plugins section of your `.eslintrc` configuratio
 
 ```json
 {
-    "plugins": [
-        "remix-react-routes"
-    ]
+  "plugins": ["remix-react-routes"]
 }
 ```
-
 
 Then configure the rules you want to use under the rules section.
 
 ```json
 {
-    "rules": {
-        "remix-react-routes/rule-name": 2
-    }
+  "rules": {
+    "remix-react-routes/require-valid-paths": 2,
+    "remix-react-routes/no-ambiguous-paths": 2
+  }
 }
 ```
 
 ## Supported Rules
 
-* Fill in provided rules here
-
-
+- [require-valid-paths](src/rules/require-valid-paths) - Ensure `<Link>` and friends point to actual routes in the app
+- [no-ambiguous-paths](src/rules/no-ambiguous-paths) - Ensure `<Link>` and friends use absolute paths

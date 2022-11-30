@@ -1,9 +1,7 @@
 import type {
-  JSXAttribute,
   JSXElement,
   JSXExpression,
   JSXExpressionContainer,
-  JSXSpreadAttribute,
   Literal,
   SourceLocation,
   TemplateElement,
