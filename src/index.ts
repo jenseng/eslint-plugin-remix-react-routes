@@ -49,15 +49,24 @@ export const rules = {
           eachRoutePathAttribute(
             node,
             RoutingComponentAttributes,
-            ({ component, attribute, value: toPath, loc }) => {
+            ({
+              component,
+              attribute,
+              value: toPath,
+              nativeAlternative,
+              loc,
+            }) => {
               if (resolvePath(currentRoutePath, toPath)) return;
               context.report({
-                messageId: "ambiguousPath",
+                messageId: toPath.match(IS_A_URI)
+                  ? "urlAsPath"
+                  : "ambiguousPath",
                 loc,
                 data: {
                   toPath,
                   component,
                   attribute,
+                  nativeAlternative,
                 },
               });
             }
@@ -75,6 +84,7 @@ export const rules = {
       messages: {
         ambiguousPath:
           'Ambiguous route path "{{toPath}}". Specify absolute paths when using `<{{component}} {{attribute}}>` outside of a route.',
+        urlAsPath: `Ambiguous route path "{{toPath}}". If you're trying to reference a URL, consider using \`{{nativeAlternative}}\` instead.`,
       },
       type: "suggestion",
       schema: [],
@@ -94,26 +104,14 @@ export const rules = {
             node,
             RoutingComponentAttributes,
             ({ nativeAlternative, value: toPath, loc }) => {
-              const looksLikeAUrl = toPath.match(IS_A_URI);
               const toPathNormalized = resolvePath(currentRoutePath, toPath);
-              // if we can't normalize a relative path, we generally defer to no-ambiguous-paths...
-              if (toPathNormalized) {
-                if (validateRoute(toPathNormalized)) return;
-                if (!looksLikeAUrl)
-                  return context.report({
-                    messageId: "invalidPath",
-                    loc,
-                    data: { toPathNormalized },
-                  });
-              }
-              // ... unless it looks like a URL in which case we still complain here
-              if (looksLikeAUrl) {
-                context.report({
-                  messageId: "urlAsPath",
-                  loc,
-                  data: { toPathNormalized, nativeAlternative },
-                });
-              }
+              if (!toPathNormalized) return; // if we can't resolve a relative path, we defer to no-ambiguous-paths
+              if (validateRoute(toPathNormalized)) return; // yay
+              return context.report({
+                messageId: toPath.match(IS_A_URI) ? "urlAsPath" : "invalidPath",
+                loc,
+                data: { toPathNormalized, nativeAlternative },
+              });
             }
           );
         },
