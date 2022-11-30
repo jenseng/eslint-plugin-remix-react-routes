@@ -2,7 +2,7 @@ import * as path from "path";
 import { createSyncFn } from "synckit";
 import fs from "fs";
 import * as chokidar from "chokidar";
-import { formatRoutesAsJson } from "@remix-run/dev/dist/config/format";
+import { formatRoutesAsJson } from "./remixShim";
 
 type RemixAppConfig = {
   appDirectory: string;

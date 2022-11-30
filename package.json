@@ -1,6 +1,6 @@
 {
   "name": "eslint-plugin-remix-react-routes",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Validate routes referenced by <Link> and friends in a Remix app",
   "keywords": [
     "eslint",
@@ -27,11 +27,12 @@
     "@typescript-eslint/types": "^5.44.0",
     "@typescript-eslint/utils": "^5.44.0",
     "chokidar": "^3.5.3",
+    "semver": "^7.3.8",
     "synckit": "^0.8.4",
     "tsup": "^6.5.0"
   },
   "devDependencies": {
-    "@remix-run/dev": "^1.7.6",
+    "@remix-run/dev": "^1.5.1",
     "eslint": "^8.19.0",
     "eslint-plugin-eslint-plugin": "^5.0.0",
     "eslint-plugin-node": "^11.1.0"
@@ -40,7 +41,7 @@
     "node": "^14.17.0 || ^16.0.0 || >= 18.0.0"
   },
   "peerDependencies": {
-    "@remix-run/dev": "^1.7.6",
+    "@remix-run/dev": "^1.5.1",
     "eslint": ">=7"
   },
   "license": "ISC"
