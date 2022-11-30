@@ -1,6 +1,6 @@
 {
   "name": "eslint-plugin-remix-react-routes",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Validate routes referenced by <Link> and friends in a Remix app",
   "keywords": [
     "eslint",
@@ -12,6 +12,7 @@
     "Link"
   ],
   "author": "Jon Jensen",
+  "homepage": "https://github.com/jenseng/eslint-plugin-remix-react-routes",
   "main": "./dist/index.js",
   "files": [
     "LICENSE.md",

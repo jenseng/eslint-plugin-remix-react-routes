@@ -40,6 +40,6 @@ Then configure the rules you want to use under the rules section.
 
 ## Supported Rules
 
-- [require-valid-paths](src/rules/require-valid-paths) - Ensure `<Link>` and friends point to actual routes in the app
-- [no-relative-paths](src/rules/no-relative-paths) - Ensure `<Link>` and friends use absolute paths
-- [no-urls](src/rules/no-relative-paths) - Ensure `<Link>` and friends use paths rather than URLs
+- [require-valid-paths](https://github.com/jenseng/eslint-plugin-remix-react-routes/tree/main/src/rules/require-valid-paths) - Ensure `<Link>` and friends point to actual routes in the app
+- [no-relative-paths](https://github.com/jenseng/eslint-plugin-remix-react-routes/tree/main/src/rules/no-relative-paths) - Ensure `<Link>` and friends use absolute paths
+- [no-urls](https://github.com/jenseng/eslint-plugin-remix-react-routes/tree/main/src/rules/no-relative-paths) - Ensure `<Link>` and friends use paths rather than URLs
