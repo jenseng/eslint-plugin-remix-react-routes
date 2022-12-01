@@ -92,7 +92,10 @@ function debug(...values: string[]) {
  */
 const readConfigSync = createSyncFn(path.resolve(__dirname, "readConfig.js"));
 
-function loadAppConfig(projectPath: string, recreateWatcher = false) {
+function loadAppConfig(
+  projectPath: string,
+  recreateWatcher = false
+): RemixAppConfig {
   const appConfig = readConfigSync(projectPath);
   appConfig.routes = JSON.parse(formatRoutesAsJson(appConfig.routes));
   if (watchForChanges)
@@ -116,7 +119,9 @@ export function getRemixAppConfig(filename: string) {
 }
 
 const visited = new Map<string, boolean>();
-function _maybeFindRemixAppConfig(filename: string) {
+function _maybeFindRemixAppConfig(
+  filename: string
+): RemixAppConfig | undefined {
   const dir = path.dirname(filename);
   if (dir === filename) return; // root, nope
   if (visited.has(dir)) return; // someone else has been here, nope
@@ -130,7 +135,7 @@ function _maybeFindRemixAppConfig(filename: string) {
   } finally {
     visited.set(dir, true);
   }
-  _maybeFindRemixAppConfig(dir);
+  return _maybeFindRemixAppConfig(dir);
 }
 
 /**
