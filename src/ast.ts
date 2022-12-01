@@ -50,23 +50,19 @@ function getJSXExpressionStringValue(node: JSXExpressionContainer) {
 }
 
 /**
- * If this is a routing-aware element (e.g. `<Link>`), resolve any path-y
- * attributes (e.g. `to`) and run the callback for each one.
+ * Resolve matching string attributes for this element and run the callback for each one.
  */
-export function eachRoutePathAttribute(
+export function forEachStringAttribute<
+  T extends { component: string; attribute: string }
+>(
   node: JSXElement,
-  routingComponentAttributes: {
-    component: string;
-    attribute: string;
-    nativeAlternative?: string;
-  }[],
-  cb: (data: {
-    component: string;
-    attribute: string;
-    nativeAlternative?: string;
-    value: string;
-    loc: SourceLocation;
-  }) => void
+  attributeMatchers: T[],
+  cb: (
+    data: T & {
+      value: string;
+      loc: SourceLocation;
+    }
+  ) => void
 ) {
   if (node.openingElement.name.type !== "JSXIdentifier") return;
   const {
@@ -74,19 +70,19 @@ export function eachRoutePathAttribute(
     name: { name: componentName },
   } = node.openingElement;
 
-  routingComponentAttributes = routingComponentAttributes.filter(
+  attributeMatchers = attributeMatchers.filter(
     ({ component }) => component === componentName
   );
   for (const attribute of attributes) {
     if (attribute.type !== "JSXAttribute") continue;
     if (!attribute.value) continue;
-    const componentAttribute = routingComponentAttributes.find(
+    const matcher = attributeMatchers.find(
       (ca) => ca.attribute === attribute.name.name
     );
-    if (!componentAttribute) continue;
+    if (!matcher) continue;
     const value = getNodeStringValue(attribute.value)?.replace(/(\?|#).*/, "");
     const loc = attribute.value.loc;
     if (typeof value === "undefined") continue;
-    cb({ ...componentAttribute, value, loc });
+    cb({ ...matcher, value, loc });
   }
 }

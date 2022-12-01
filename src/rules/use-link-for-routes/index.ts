@@ -1,11 +1,11 @@
-import { eachRoutePathAttribute } from "../../ast";
+import { forEachStringAttribute } from "../../ast";
 import { createRule, isAUri } from "../common";
 
 export default createRule({
   create(context) {
     return {
       JSXElement(node) {
-        eachRoutePathAttribute(
+        forEachStringAttribute(
           node,
           [{ component: "a", attribute: "href" }],
           ({ value: toPath, loc }) => {

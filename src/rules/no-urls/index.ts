@@ -1,13 +1,17 @@
-import { eachRoutePathAttribute } from "../../ast";
-import { createRule, isAUri, RoutingComponentAttributes } from "../common";
+import { forEachStringAttribute } from "../../ast";
+import {
+  createRule,
+  isAUri,
+  RoutingComponentAttributeMatchers,
+} from "../common";
 
 export default createRule({
   create(context) {
     return {
       JSXElement(node) {
-        eachRoutePathAttribute(
+        forEachStringAttribute(
           node,
-          RoutingComponentAttributes,
+          RoutingComponentAttributeMatchers,
           ({ nativeAlternative, value: toPath, component, attribute, loc }) => {
             if (!isAUri(toPath)) return; // defer to no-relative-paths and require-valid-paths
             return context.report({

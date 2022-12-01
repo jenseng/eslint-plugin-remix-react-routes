@@ -29,7 +29,7 @@ export function isAbsolute(path: string) {
 }
 
 // TODO: perhaps make this configurable if users want to lint other components/attributes
-export const RoutingComponentAttributes = [
+export const RoutingComponentAttributeMatchers = [
   { component: "Link", attribute: "to", nativeAlternative: "<a href>" },
   { component: "NavLink", attribute: "to", nativeAlternative: "<a href>" },
   {

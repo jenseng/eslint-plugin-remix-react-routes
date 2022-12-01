@@ -1,10 +1,10 @@
 import { getRemixContext } from "../../remixContext";
-import { eachRoutePathAttribute } from "../../ast";
+import { forEachStringAttribute } from "../../ast";
 import {
   createRule,
   isAUri,
   resolvePath,
-  RoutingComponentAttributes,
+  RoutingComponentAttributeMatchers,
 } from "../common";
 
 export default createRule({
@@ -15,10 +15,10 @@ export default createRule({
 
     return {
       JSXElement(node) {
-        eachRoutePathAttribute(
+        forEachStringAttribute(
           node,
-          RoutingComponentAttributes,
-          ({ nativeAlternative, value: toPath, loc }) => {
+          RoutingComponentAttributeMatchers,
+          ({ value: toPath, loc }) => {
             const toPathNormalized = resolvePath(currentRoutePath, toPath);
             if (!toPathNormalized) return; // if we can't resolve a relative path, we defer to no-relative-paths
             if (isAUri(toPath)) return; // defer to no-urls
@@ -26,7 +26,7 @@ export default createRule({
             return context.report({
               messageId: "invalidPath",
               loc,
-              data: { toPathNormalized, nativeAlternative },
+              data: { toPathNormalized },
             });
           }
         );
