@@ -6,19 +6,27 @@ import {
   isAUri,
   RoutingComponentAttributes,
 } from "../common";
+import path from "path";
 
 type Options = [
   {
     enforceInRouteComponents: boolean;
+    allowLinksToSelf: boolean;
   }
 ];
+const defaultOptions = {
+  enforceInRouteComponents: false,
+  allowLinksToSelf: true,
+} as const;
+
 export default createRule<Options, "relativePath" | "ambiguousPath">({
   create(context) {
     const { currentRoutePath } = getRemixContext(context);
+    const options = { ...defaultOptions, ...(context.options[0] ?? {}) };
 
     // If we're inside a route, we can resolve relative paths, so bail if the options allow it
-    if (currentRoutePath && !context.options[0]?.enforceInRouteComponents)
-      return {};
+    if (currentRoutePath && !options.enforceInRouteComponents) return {};
+
     // TODO: though consider linting full-stack components exported from a route module 🤔
 
     return {
@@ -29,6 +37,9 @@ export default createRule<Options, "relativePath" | "ambiguousPath">({
           ({ component, attribute, value: toPath, nativeAlternative, loc }) => {
             if (isAbsolute(toPath)) return;
             if (isAUri(toPath)) return; // defer to no-urls
+            if (options.allowLinksToSelf && path.relative(".", toPath) === "")
+              return;
+
             context.report({
               messageId: currentRoutePath ? "relativePath" : "ambiguousPath",
               loc,
@@ -65,10 +76,13 @@ export default createRule<Options, "relativePath" | "ambiguousPath">({
           enforceInRouteComponents: {
             type: "boolean",
           },
+          allowLinksToSelf: {
+            type: "boolean",
+          },
         },
         additionalProperties: false,
       },
     ],
   },
-  defaultOptions: [{ enforceInRouteComponents: false }],
+  defaultOptions: [defaultOptions],
 });

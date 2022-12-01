@@ -86,7 +86,7 @@ export function eachRoutePathAttribute(
     if (!componentAttribute) continue;
     const value = getNodeStringValue(attribute.value)?.replace(/(\?|#).*/, "");
     const loc = attribute.value.loc;
-    if (!value) continue;
+    if (typeof value === "undefined") continue;
     cb({ ...componentAttribute, value, loc });
   }
 }

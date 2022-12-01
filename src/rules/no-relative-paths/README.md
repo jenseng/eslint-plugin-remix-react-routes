@@ -13,6 +13,8 @@ This rule does not check:
 
 - Paths that look like URLs (these are handled by [no-urls](../no-urls/))
 
+Relative paths to the current route are allowed by default (e.g. `<Link to="?some=param">`), but can be disallowed (if `allowLinksToSelf=false`).
+
 ### Examples of incorrect code for this rule:
 
 **app/components/header.jsx**
@@ -40,6 +42,7 @@ return <Link to="settings"></Link>;
 The supported options are:
 
 - `enforceInRouteComponents` (default `false`) - Disallow using relative paths within route components. Although relative paths can be consistently resolved in these cases, they can make refactoring more difficult, so you might consider enabling this option.
+- `allowLinksToSelf` (default `true`) - Allow relative links to the current route. This can be useful if you are linking to the current route with different search parameters or a URL fragment.
 
 To use, you can specify as follows:
 

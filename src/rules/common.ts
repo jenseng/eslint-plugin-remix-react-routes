@@ -18,7 +18,10 @@ export function resolvePath(fromPath: string | undefined, toPath: string) {
     if (part === "..") result.pop();
     else if (part !== ".") result.push(part);
   }
-  return result.join("/");
+  const resolved = result.join("/");
+  return resolved.match(/.\/$/)
+    ? resolved.substring(0, resolved.length - 1)
+    : resolved;
 }
 
 export function isAbsolute(path: string) {
