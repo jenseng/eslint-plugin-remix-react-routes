@@ -31,6 +31,7 @@ Then configure the rules you want to use under the rules section.
 ```json
 {
   "rules": {
+    "remix-react-routes/use-link-for-routes": 2,
     "remix-react-routes/require-valid-paths": 2,
     "remix-react-routes/no-relative-paths": 2,
     "remix-react-routes/no-urls": 2
@@ -40,6 +41,7 @@ Then configure the rules you want to use under the rules section.
 
 ## Supported Rules
 
+- [use-link-for-routes](https://github.com/jenseng/eslint-plugin-remix-react-routes/tree/main/src/rules/use-link-for-routes) - Ensure routes are linked via `<Link to>` rather than `<a href>`
 - [require-valid-paths](https://github.com/jenseng/eslint-plugin-remix-react-routes/tree/main/src/rules/require-valid-paths) - Ensure `<Link>` and friends point to actual routes in the app
 - [no-relative-paths](https://github.com/jenseng/eslint-plugin-remix-react-routes/tree/main/src/rules/no-relative-paths) - Ensure `<Link>` and friends use absolute paths
 - [no-urls](https://github.com/jenseng/eslint-plugin-remix-react-routes/tree/main/src/rules/no-urls) - Ensure `<Link>` and friends use paths rather than URLs
