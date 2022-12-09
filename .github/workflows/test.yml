@@ -1,0 +1,43 @@
+name: Test
+on:
+  push:
+    branches:
+      - main
+  pull_request: {}
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: latest
+          cache: "npm"
+      - run: npm ci
+      - run: npm run lint
+      # TODO unit tests
+  integration-tests:
+    strategy:
+      matrix:
+        remix_version: [1.5.1, latest]
+    runs-on: ubuntu-latest
+    env:
+      REMIX_VERSION: ${{ matrix.remix_version }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: latest
+          # manage caching ourselves to keep it distinct from the tests cache, since we're storing more stuff in it (app templates)
+      - uses: actions/cache@v3
+        with:
+          path: $HOME/.npm
+          key: integration-test-${{ matrix.remix_version }}-${{ github.base_ref || github.ref_name }}
+          restore-keys: |
+            integration-test-${{ matrix.remix_version }}-main
+      - run: npm ci
+      - run: npm run build
+      - run: npm run test:integration
