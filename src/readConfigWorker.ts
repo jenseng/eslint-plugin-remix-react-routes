@@ -1,5 +1,5 @@
 import { runAsWorker } from "synckit";
-import { readConfig } from "./remixShim";
+import { readConfig } from "./remix/remixShim";
 
 runAsWorker(async (projectPath) => {
   // TODO: come up with something less hacky; here we rely on the fact that

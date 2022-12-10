@@ -100,6 +100,7 @@ export function buildAppFactory(remixVersion: string): AppFactory {
     mkdir(appDir);
     cp(templateDirectory, appDir);
     prepareAppFiles(appDir, files);
+    log("App factory ready!");
     return {
       lint() {
         return lint(appDir);

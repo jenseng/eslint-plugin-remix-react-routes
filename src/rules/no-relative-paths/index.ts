@@ -1,4 +1,4 @@
-import { getRemixContext } from "../../remixContext";
+import { getRemixContext } from "../../remix";
 import { forEachStringAttribute } from "../../ast";
 import {
   createRule,
@@ -10,8 +10,8 @@ import path from "path";
 
 type Options = [
   {
-    enforceInRouteComponents: boolean;
-    allowLinksToSelf: boolean;
+    enforceInRouteComponents?: boolean;
+    allowLinksToSelf?: boolean;
   }
 ];
 const defaultOptions = {
