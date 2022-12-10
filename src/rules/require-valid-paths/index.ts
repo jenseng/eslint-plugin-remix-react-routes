@@ -1,4 +1,4 @@
-import { getRemixContext } from "../../remixContext";
+import { getRemixContext } from "../../remix";
 import { forEachStringAttribute } from "../../ast";
 import {
   createRule,
