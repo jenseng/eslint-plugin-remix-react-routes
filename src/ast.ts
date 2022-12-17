@@ -1,52 +1,85 @@
 import type {
   JSXElement,
-  JSXExpression,
-  JSXExpressionContainer,
   Literal,
   SourceLocation,
-  TemplateElement,
+  TemplateLiteral,
 } from "@typescript-eslint/types/dist/generated/ast-spec";
+import { ESLintUtils, TSESTree } from "@typescript-eslint/utils";
+import { RuleContext } from "@typescript-eslint/utils/dist/ts-eslint";
 
-const EXPR_PLACEHOLDER = "__EXPR_PLACEHOLDER__";
-const mergePattern = new RegExp(`[^/]*${EXPR_PLACEHOLDER}[^/]*`);
+const EXPR_PLACEHOLDER = "--__EXPR_PLACEHOLDER__--";
+const mergePattern = new RegExp(`[^/]*${EXPR_PLACEHOLDER}[^/]*`, "g");
 
 /**
- * Convert template parts to a string path, using this simple heuristic:
+ * Normalize a string path value:
+ *  - Remove query parameters and hash fragments
  *  - If expressions are bounded by slashes, assume they represent a single dynamic path segment
  *  - If not, merge with adjacent segment(s) into a dynamic path segment
  *
  * Examples:
- *  - `foo/${bar}/lol` => "foo/:param/lol"
- *  - `foo/${bar}lol` => "foo/:param"
+ *  - `foo/--__EXPR_PLACEHOLDER__--/lol?ok` => "foo/:param/lol"
+ *  - `foo/--__EXPR_PLACEHOLDER__--lol#huh` => "foo/:param"
  */
-function stringifyTemplatePath(parts: TemplateElement[]) {
-  const values = parts.map((p) => p.value.cooked);
-  return values.join(EXPR_PLACEHOLDER).replace(mergePattern, ":param");
+export function getPathValue(path: string) {
+  return path.replace(mergePattern, ":param").replace(/(\?|#).*/, "");
 }
 
-function getNodeStringValue(node: Literal | JSXExpression) {
+/**
+ * Resolve a template literal to a string, as best we can
+ *
+ * @example
+ * `foo/${"test"}/${1}/${unknown}/lol` => "foo/test/1/--__EXPR_PLACEHOLDER__--/lol"
+ */
+function resolveTemplateLiteralExpressions(
+  { expressions, quasis }: TemplateLiteral,
+  resolveType: ResolveType
+) {
+  const result: string[] = [];
+  let current: string | undefined;
+  quasis.forEach((quasi, i) => {
+    current = `${typeof current !== "undefined" ? current : ""}${
+      quasi.value.cooked
+    }`;
+    // last quasi, so we're done
+    if (i === expressions.length) {
+      result.push(current);
+      return;
+    }
+    // see if the following expression is a literal, in which case we add to current
+    const exprStringValue = getNodeStringValue(expressions[i], resolveType);
+    if (exprStringValue !== null) {
+      current += exprStringValue;
+      return;
+    }
+    // otherwise we don't know what the expression is 🤷‍♂️
+    result.push(current);
+    current = undefined;
+  });
+  return result.join(EXPR_PLACEHOLDER);
+}
+
+function getNodeStringValue(
+  node: TSESTree.Node,
+  resolveType: ResolveType
+): string | null {
   switch (node.type) {
+    case "JSXExpressionContainer":
+      return getNodeStringValue(node.expression, resolveType);
     case "Literal":
       return getStringLiteralValue(node);
-    case "JSXExpressionContainer":
-      return getJSXExpressionStringValue(node);
+    case "TemplateLiteral":
+      return resolveTemplateLiteralExpressions(node, resolveType);
+    default:
+      // see if the type checker can resolve the value 🤞
+      const nodeType = resolveType(node);
+      if (nodeType?.isLiteral()) return String(nodeType.value);
   }
+  return null;
 }
 
 function getStringLiteralValue(node: Literal) {
-  if (typeof node.value !== "string") return; // 🤷‍♂️
-  return node.value;
-}
-
-function getJSXExpressionStringValue(node: JSXExpressionContainer) {
-  const { expression } = node;
-  switch (expression.type) {
-    case "TemplateLiteral":
-      const stringifiedPath = stringifyTemplatePath(expression.quasis);
-      return stringifiedPath ?? undefined;
-    case "Literal":
-      return getStringLiteralValue(expression);
-  }
+  // if (typeof node.value !== "string") return; // 🤷‍♂️
+  return String(node.value);
 }
 
 /**
@@ -56,10 +89,11 @@ export function forEachStringAttribute<
   T extends { component: string; attribute: string }
 >(
   node: JSXElement,
+  resolveType: ResolveType,
   attributeMatchers: T[],
   cb: (
     data: T & {
-      value: string;
+      value: string | null;
       loc: SourceLocation;
     }
   ) => void
@@ -80,9 +114,24 @@ export function forEachStringAttribute<
       (ca) => ca.attribute === attribute.name.name
     );
     if (!matcher) continue;
-    const value = getNodeStringValue(attribute.value)?.replace(/(\?|#).*/, "");
+    const value = getNodeStringValue(attribute.value, resolveType);
     const loc = attribute.value.loc;
     if (typeof value === "undefined") continue;
     cb({ ...matcher, value, loc });
   }
 }
+
+export function buildResolveType(context: RuleContext<any, any>) {
+  try {
+    const parserServices = ESLintUtils.getParserServices(context);
+    const typeChecker = parserServices.program.getTypeChecker();
+    return (node: TSESTree.Node) => {
+      const originalNode = parserServices.esTreeNodeToTSNodeMap.get(node);
+      return typeChecker.getTypeAtLocation(originalNode);
+    };
+  } catch (e) {
+    return () => {};
+  }
+}
+
+type ResolveType = ReturnType<typeof buildResolveType>;

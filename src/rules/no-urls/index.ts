@@ -1,4 +1,8 @@
-import { forEachStringAttribute } from "../../ast";
+import {
+  buildResolveType,
+  forEachStringAttribute,
+  getPathValue,
+} from "../../ast";
 import {
   createRule,
   isAUri,
@@ -7,12 +11,15 @@ import {
 
 export default createRule({
   create(context) {
+    const resolveType = buildResolveType(context);
     return {
       JSXElement(node) {
         forEachStringAttribute(
           node,
+          resolveType,
           RoutingComponentAttributeMatchers,
-          ({ nativeAlternative, value: toPath, component, attribute, loc }) => {
+          ({ nativeAlternative, value, component, attribute, loc }) => {
+            const toPath = getPathValue(value ?? "");
             if (!isAUri(toPath)) return; // defer to no-relative-paths and require-valid-paths
             return context.report({
               messageId: "urlAsPath",
