@@ -1,5 +1,9 @@
 import { getRemixContext } from "../../remix";
-import { forEachStringAttribute } from "../../ast";
+import {
+  buildResolveType,
+  forEachStringAttribute,
+  getPathValue,
+} from "../../ast";
 import {
   createRule,
   isAbsolute,
@@ -21,6 +25,7 @@ const defaultOptions = {
 
 export default createRule<Options, "relativePath" | "ambiguousPath">({
   create(context) {
+    const resolveType = buildResolveType(context);
     const { currentRoutePath } = getRemixContext(context);
     const options = { ...defaultOptions, ...(context.options[0] ?? {}) };
 
@@ -33,8 +38,10 @@ export default createRule<Options, "relativePath" | "ambiguousPath">({
       JSXElement(node) {
         forEachStringAttribute(
           node,
+          resolveType,
           RoutingComponentAttributeMatchers,
-          ({ component, attribute, value: toPath, loc }) => {
+          ({ component, attribute, value, loc }) => {
+            const toPath = getPathValue(value ?? "");
             if (isAbsolute(toPath)) return;
             if (isAUri(toPath)) return; // defer to no-urls
             if (options.allowLinksToSelf && path.relative(".", toPath) === "")

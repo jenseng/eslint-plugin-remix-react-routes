@@ -1,5 +1,6 @@
 import * as path from "path";
 import { getRemixAppConfig, JsonFormattedRoute } from "./appConfig";
+import { RuleContext } from "@typescript-eslint/utils/dist/ts-eslint";
 
 type RemixAppConfig = {
   appDirectory: string;
@@ -82,10 +83,6 @@ function _findRoutePathByFilename(
   }
 }
 
-type RuleContext = {
-  getFilename(): string;
-  getCwd?(): string;
-};
 export type RemixContext = {
   appConfig?: RemixAppConfig;
   currentRoutePath?: string;
@@ -94,7 +91,19 @@ export type RemixContext = {
 /**
  * Get the Remix context based on the current ESLint rule context
  */
-export function getRemixContext(context: RuleContext): RemixContext {
+export function getRemixContext<
+  TMessageIds extends string,
+  TOptions extends readonly unknown[]
+>(
+  context: Pick<RuleContext<TMessageIds, TOptions>, "settings" | "getFilename">
+): RemixContext {
+  if (context.settings?.remixReactRoutes?.mockRemixContext) {
+    return {
+      validateRoute: () => true,
+      ...context.settings?.remixReactRoutes?.mockRemixContext,
+    };
+  }
+
   const filename = context.getFilename();
   let appConfig: RemixAppConfig | undefined;
   try {

@@ -12,7 +12,7 @@ export const createRule = ESLintUtils.RuleCreator(
 export function resolvePath(fromPath: string | undefined, toPath: string) {
   if (isAbsolute(toPath)) return toPath;
   if (!fromPath) return undefined; // can't resolve a relative path if we don't know where we are 🤷‍♂️
-  const parts = `${fromPath}/${toPath}`.split("/");
+  const parts = `${fromPath === "/" ? "" : fromPath}/${toPath}`.split("/");
   const result: string[] = [];
   for (const part of parts) {
     if (part === "..") result.pop();

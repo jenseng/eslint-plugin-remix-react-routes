@@ -99,6 +99,7 @@ export function buildAppFactory(remixVersion: string): AppFactory {
     let appDir = join(baseDir, `app-${appIndex++}`);
     mkdir(appDir);
     cp(templateDirectory, appDir);
+    rmrf(join(appDir, "app/routes"));
     prepareAppFiles(appDir, files);
     log("App factory ready!");
     return {
@@ -113,7 +114,7 @@ export function buildAppFactory(remixVersion: string): AppFactory {
 
 function lint(cwd: string) {
   const output = exec(
-    "../node_modules/.bin/eslint 'app/**/*.tsx' --format json || :",
+    "../node_modules/.bin/eslint 'app/**/*.{tsx,jsx}' --format json || :",
     cwd
   );
   const results = JSON.parse(output) as {
@@ -123,7 +124,10 @@ function lint(cwd: string) {
   return Object.fromEntries(
     results.map(({ filePath, messages }) => [
       relative(cwd, filePath),
-      messages.map(({ ruleId, messageId }) => `${ruleId}:${messageId}`).sort(),
+      messages
+        .map(({ ruleId, messageId }) => ruleId && `${ruleId}:${messageId}`)
+        .filter(Boolean)
+        .sort(),
     ])
   );
 }

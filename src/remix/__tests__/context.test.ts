@@ -51,6 +51,7 @@ describe("remixConfig", () => {
   describe("validateRoutes", () => {
     const { validateRoute, appConfig } = getRemixContext({
       getFilename: () => "",
+      settings: {},
     });
     it("matches valid routes", () => {
       expect(validateRoute("/")).toBe(true);
