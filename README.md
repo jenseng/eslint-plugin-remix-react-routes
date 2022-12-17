@@ -4,7 +4,7 @@ Validate routes referenced by `<Link>` and friends in a [Remix](https://remix.ru
 
 ## Installation
 
-You'll first need to install [ESLint](https://eslint.org/):
+Remix apps generally have [ESLint](https://eslint.org/) pre-configured, but if not you'll want to set it up:
 
 ```sh
 npm i eslint --save-dev
@@ -16,27 +16,59 @@ Next, install `eslint-plugin-remix-react-routes`:
 npm install eslint-plugin-remix-react-routes --save-dev
 ```
 
-## Usage
+If your app uses TypeScript, you're encouraged to also configure [typed linting](https://typescript-eslint.io/linting/typed-linting/) (and set up [`typescript-eslint`](https://typescript-eslint.io/) while you're at it!). This allows the plugin to fully leverage the type system when evaluating route expressions. To enable typed linting:
 
-Add `remix-react-routes` to the plugins section of your `.eslintrc` configuration file. You can omit the `eslint-plugin-` prefix:
-
-```json
-{
-  "plugins": ["remix-react-routes"]
-}
+```sh
+npm install @typescript-eslint/parser --save-dev
 ```
 
-Then configure the rules you want to use under the rules section.
+And add something along these lines to your `.eslintrc.js`:
 
-```json
-{
-  "rules": {
-    "remix-react-routes/use-link-for-routes": 2,
-    "remix-react-routes/require-valid-paths": 2,
-    "remix-react-routes/no-relative-paths": 2,
-    "remix-react-routes/no-urls": 2
-  }
-}
+```javascript
+module.exports = {
+  // ...
+  parser: "@typescript-eslint/parser",
+  parserOptions: {
+    project: "./tsconfig.json",
+    tsconfigRootDir: __dirname,
+  },
+};
+```
+
+## Configurations
+
+Most apps should extend from one of the following configurations:
+
+- [`recommended`](https://github.com/jenseng/eslint-plugin-remix-react-routes/tree/main/src/configs/recommended.ts): Recommended route rules that you can drop in to a Remix project.
+- [`strict`](https://github.com/jenseng/eslint-plugin-remix-react-routes/tree/main/src/configs/strict.ts): Like `recommended`, but more strict and opinionated.
+
+Add something like this to your `.eslintrc.js`:
+
+```javascript
+module.exports = {
+  // ...
+  extends: [
+    // ...
+    "plugin:remix-react-routes/recommended",
+  ],
+};
+```
+
+You can also override any config rules to meet your needs:
+
+```javascript
+module.exports = {
+  // ...
+  rules: {
+    // ...
+    "remix-react-routes/no-relative-paths": [
+      // downgrade to a warning
+      "warn",
+      // enable this check in route components
+      { enforceInRouteComponents: true },
+    ],
+  },
+};
 ```
 
 ## Supported Rules

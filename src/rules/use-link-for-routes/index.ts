@@ -21,7 +21,7 @@ export default createRule<[], "anchorForRoute" | "indeterminateUrl">({
                   messageId: "indeterminateUrl",
                   loc,
                 });
-              return;
+              return; // we don't know what it is, but we don't care 🤷‍♂️
             }
             const toPath = getPathValue(value ?? "");
             if (isAUri(toPath)) return; // this is what <a href> is for

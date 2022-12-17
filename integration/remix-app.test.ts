@@ -9,15 +9,18 @@ describe(`remix@${remixVersion}`, () => {
     import { Link } from "@remix-run/react";
     const VALID_PATH = "/";
     const INVALID_PATH = "/absolute/invalid";
-    export default function() {
-      return <Link to="/">Absolute Valid</Link>;
-      return <Link to="/absolute/invalid">Absolute Invalid</Link>;
-      return <Link to="relative/invalid">Relative Invalid</Link>;
-      return <Link to=".">Relative Self</Link>;
-
-      // these are both ignored unless typed linting + strictMode is enabled
-      return <Link to={VALID_PATH}>Absolute Valid 2</Link>;
-      return <Link to={INVALID_PATH}>Absolute Invalid 2</Link>;
+    export default function Component() {
+      return (
+        <>
+          <Link to="/">Absolute Valid</Link>
+          <Link to="/absolute/invalid">Absolute Invalid</Link>
+          <Link to="relative/invalid">Relative Invalid</Link>
+          <Link to=".">Relative Self</Link>
+          {/* these are ignored (indeterminate) unless typed linting is enabled */}
+          <Link to={VALID_PATH}>Absolute Valid 2</Link>
+          <Link to={INVALID_PATH}>Absolute Invalid 2</Link>
+        </>
+      )
     }
   `;
 
@@ -30,14 +33,7 @@ describe(`remix@${remixVersion}`, () => {
       files: {
         ".eslintrc.js": `
           module.exports = {
-            plugins: ["remix-react-routes"],
-            parserOptions: {
-              ecmaFeatures: {
-                jsx: true,
-              },
-              ecmaVersion: 2015,
-              sourceType: "module",
-            },
+            extends: ["@remix-run/eslint-config", "@remix-run/eslint-config/node", "plugin:remix-react-routes/recommended"],
             rules: {
               "remix-react-routes/no-relative-paths": 2,
               "remix-react-routes/require-valid-paths": 2,
@@ -71,8 +67,7 @@ describe(`remix@${remixVersion}`, () => {
       files: {
         ".eslintrc.js": `
           module.exports = {
-            plugins: ["remix-react-routes"],
-            parser: "@typescript-eslint/parser",
+            extends: ["@remix-run/eslint-config", "@remix-run/eslint-config/node", "plugin:remix-react-routes/recommended"],
             rules: {
               "remix-react-routes/no-relative-paths": 2,
               "remix-react-routes/require-valid-paths": 2,
@@ -106,7 +101,7 @@ describe(`remix@${remixVersion}`, () => {
       files: {
         ".eslintrc.js": `
           module.exports = {
-            plugins: ["remix-react-routes"],
+            extends: ["@remix-run/eslint-config", "@remix-run/eslint-config/node", "plugin:remix-react-routes/recommended"],
             parser: "@typescript-eslint/parser",
             parserOptions: {
               project: "./tsconfig.json",
@@ -115,11 +110,6 @@ describe(`remix@${remixVersion}`, () => {
             rules: {
               "remix-react-routes/no-relative-paths": 2,
               "remix-react-routes/require-valid-paths": 2,
-            },
-            settings: {
-              remixReactRoutes: {
-                strictMode: true,
-              },
             },
           };
         `,
