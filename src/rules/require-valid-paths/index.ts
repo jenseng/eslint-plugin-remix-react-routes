@@ -31,7 +31,7 @@ export default createRule<[], "invalidPath" | "indeterminatePath">({
                   messageId: "indeterminatePath",
                   loc,
                 });
-              return; // we don't know what it us, but we don't care 🤷‍♂️
+              return; // we don't know what it is, but we don't care 🤷‍♂️
             }
             const toPath = getPathValue(value ?? "");
             const toPathNormalized = resolvePath(currentRoutePath, toPath);
