@@ -33,11 +33,7 @@ describe(`remix@${remixVersion}`, () => {
       files: {
         ".eslintrc.js": `
           module.exports = {
-            extends: ["@remix-run/eslint-config", "@remix-run/eslint-config/node", "plugin:remix-react-routes/recommended"],
-            rules: {
-              "remix-react-routes/no-relative-paths": 2,
-              "remix-react-routes/require-valid-paths": 2,
-            },
+            extends: ["@remix-run/eslint-config", "@remix-run/eslint-config/node", "plugin:remix-react-routes/recommended"]
           };
         `,
         "app/routes/index.jsx": moduleWithLinks,
@@ -67,11 +63,7 @@ describe(`remix@${remixVersion}`, () => {
       files: {
         ".eslintrc.js": `
           module.exports = {
-            extends: ["@remix-run/eslint-config", "@remix-run/eslint-config/node", "plugin:remix-react-routes/recommended"],
-            rules: {
-              "remix-react-routes/no-relative-paths": 2,
-              "remix-react-routes/require-valid-paths": 2,
-            },
+            extends: ["@remix-run/eslint-config", "@remix-run/eslint-config/node", "plugin:remix-react-routes/recommended"]
           };
         `,
         "app/routes/index.tsx": moduleWithLinks,
@@ -106,11 +98,7 @@ describe(`remix@${remixVersion}`, () => {
             parserOptions: {
               project: "./tsconfig.json",
               tsconfigRootDir: __dirname,
-            },
-            rules: {
-              "remix-react-routes/no-relative-paths": 2,
-              "remix-react-routes/require-valid-paths": 2,
-            },
+            }
           };
         `,
         "app/routes/index.tsx": moduleWithLinks,
