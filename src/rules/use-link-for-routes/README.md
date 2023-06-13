@@ -2,7 +2,7 @@
 
 ## Rule Details
 
-By default this rule ensures that links to routes are implemented with `<Link to>` rather than `<a href>` in a [Remix](https://remix.run) app. This ensures faster page transitions for end-users.
+By default this rule ensures that links to routes are implemented with `<Link to>` rather than `<a href>` in a [Remix](https://remix.run) app. This ensures faster page transitions for end-users. The exception to this is when linking to resource routes or specific instances when you want to trigger a full-page refresh. In these cases, use `reloadDocument` on the `Link`.
 
 ### Examples of incorrect code for this rule:
 
@@ -26,6 +26,7 @@ return (
   <>
     <Link to="/some/route">A page</Link>
     <Link to="../another/route">Another page</Link>
+    <Link reloadDocument to="data.pdf">A full refresh to a resource route</Link>
     <a href="http://example.com">Something external</a>
     <a href="//example.com">A scheme-relative link</a>
   </>
