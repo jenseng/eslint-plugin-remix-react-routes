@@ -48,7 +48,7 @@
     "node": "^14.17.0 || ^16.0.0 || >= 18.0.0"
   },
   "peerDependencies": {
-    "@remix-run/dev": "^1.5.1",
+    "@remix-run/dev": "^2.1.0",
     "eslint": ">=7"
   },
   "license": "ISC"
